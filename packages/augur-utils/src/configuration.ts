@@ -122,6 +122,8 @@ export interface ContractAddresses {
   LegacyReputationToken: string;
   CancelOrder: string;
   Cash: string;
+  USDC: string;
+  USDT: string;
   ShareToken: string;
   CreateOrder: string;
   FillOrder: string;
@@ -172,6 +174,8 @@ export interface ContractAddresses {
 export interface ExternalAddresses {
   LegacyReputationToken?: string;
   Cash?: string;
+  USDC?: string;
+  USDT?: string;
   DaiVat?: string;
   DaiPot?: string;
   DaiJoin?: string;
