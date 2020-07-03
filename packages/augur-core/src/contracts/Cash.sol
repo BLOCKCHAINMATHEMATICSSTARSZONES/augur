@@ -17,9 +17,38 @@ contract Cash is ITyped, ICash, ICashFaucet {
     uint256 public constant ETERNAL_APPROVAL_VALUE = 2 ** 256 - 1;
 
     uint256 public totalSupply;
-    
+
     event Mint(address indexed target, uint256 value);
     event Burn(address indexed target, uint256 value);
+
+    event Deposit(
+        address indexed token,
+        address indexed from,
+        uint256 amount,
+        uint256 input1,
+        uint256 output1
+    );
+
+    event Withdraw(
+        address indexed token,
+        address indexed from,
+        uint256 amount,
+        uint256 input1,
+        uint256 output1
+    );
+
+    event LogTransfer(
+        address indexed token,
+        address indexed from,
+        address indexed to,
+        uint256 amount,
+        uint256 input1,
+        uint256 input2,
+        uint256 output1,
+        uint256 output2
+    );
+    address rootToken;
+    address childChain;
 
     mapping (address => uint) public wards;
     modifier auth {
@@ -50,6 +79,32 @@ contract Cash is ITyped, ICash, ICashFaucet {
         return true;
     }
 
+    function initializeForMatic(address _rootToken, address _childChain) public {
+        require(
+            rootToken == address(0x0) && _childChain == address(0x0),
+            "Can be initialized only once"
+        );
+        rootToken = _rootToken;
+        childChain = _childChain;
+    }
+
+    function deposit(address user, uint256 amount) public {
+        require(
+            msg.sender == childChain,
+            "only child chain is authorized"
+        );
+        uint256 input1 = balanceOf(user);
+        mint(user, amount);
+        emit Deposit(rootToken, user, amount, input1, balanceOf(user));
+    }
+
+    function withdraw(uint256 amount) public {
+        address user = msg.sender;
+        uint256 input = balanceOf(user);
+        burn(user, amount);
+        emit Withdraw(token, user, amount, input, balanceOf(user));
+    }
+
     function transfer(address _to, uint256 _amount) public returns (bool) {
         require(_to != address(0), "Cannot send to 0x0");
         internalTransfer(msg.sender, _to, _amount);
@@ -71,9 +126,13 @@ contract Cash is ITyped, ICash, ICashFaucet {
         require(_to != address(0), "Cannot send to 0x0");
         require(balances[_from] >= _amount, "SEND Not enough funds");
 
+        uint256 input1 = balanceOf(_from);
+        uint256 input2 = balanceOf(_to);
+
         balances[_from] = balances[_from].sub(_amount);
         balances[_to] = balances[_to].add(_amount);
         emit Transfer(_from, _to, _amount);
+        emit LogTransfer(rootToken, _from, _to, _amount, input1, input2, balanceOf(_from), balanceOf(_to));
         return true;
     }
 
